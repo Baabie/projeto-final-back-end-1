@@ -17,6 +17,8 @@ app.get('/', (req, res) => {
 //------------------------PESSOA USUÁRIA----------------------------
 
 const usuarios = [];
+const mensagens = [];
+const mensagem = [];
 
 app.post('/registro', async (req, res) => {
         const { nome, email, password } = req.body;
@@ -32,8 +34,9 @@ app.post('/registro', async (req, res) => {
         }
 
         // Gerando um ID único para o novo usuário (ultilizando um UUID)
-
-        const id = uuid4()
+        const { v4: uuidv4 } = req('uuid');
+        
+        const id = uuidv4();
 
         bcrypt.hash(senha, 10, (err, senhaCriptografada) => {
             if (err) {
@@ -44,7 +47,7 @@ app.post('/registro', async (req, res) => {
         // Registrando novo usuário
         const novoUsuario = { email, senha: senhaCriptografada };
         usuarios.push(novoUsuario);
-        return res.status(201).send('Usuário registrado com sucesso.');
+        return res.status(201).send(`Seja bem vindo ${nome}! usuário registrado com sucesso.`);
     });
 
 //------------------LOGIN----------------------------------
@@ -52,6 +55,9 @@ app.post('/registro', async (req, res) => {
 app.post('/login', (req, res) => {
     const { email, password } = req.body
 
+    if(!email || !password) {
+        return res.status(400).send('Insira um e-mail e uma senha válidos')
+    }
     const usuario = usuarios.find(usuario => usuario.email === email && usuario.password === password);
 
     if (!usuario) {
@@ -63,26 +69,78 @@ app.post('/login', (req, res) => {
 
 //-----------------------CRIAR RECADOS-------------------------
 
-app.post('/menssagens', async (req, res) => {
-    const { idUsuario, messagem } = req.body;
+app.post('/mensagens', async (req, res) => {
+    const { idUsuario, mensagem } = req.body;
 
     const usuario = usuarios.find(usuario => usuario.id === idUsuario);
     if (!usuario) {
         return res.status(404).send('Usuário não encontrado');
     }
 
-    const novoRecado = { idUsuario, contrudo };
-    recados.push(novoRecado)
+    const novaMensagem = { idUsuario, mensagem };
+    mensagens.push(novaMensagem)
 
     res.status(201).send('Recado criado com sucesso')
 });
 
-app.get('/menssagem/:idUsuario', async (req, res) => {
+app.get('/mensagem/:idUsuario', async (req, res) => {
     const { idUsuario } = req.params;
 
-    const recadosUsuario = recados.filter((recado) => recado.idUsuario === idUsuario);
+    const mensagensUsuario = mensagens.filter((mensagem) => mensagem.idUsuario === idUsuario);
 
-    return res.status(200).send(recadosUsuario);
+    return res.status(200).send(mensagensUsuario);
 });
+
+
+//-------------------------- LER MENSAGENS --------------------------
+
+app.get('/mensagem/:email', (req,res) => {
+    const emailUsuario = req.params.email;
+
+    const usuario = usuarios.find(usuario => usuario.email === emailUsuario);
+    if(!usuario) {
+        return res.status(404).send('Email não encontradono sistema')
+    }
+
+    const usuarioMensagens = mensagens.filter(mensagem => mensagem.idUsuario === usuario.id)
+
+    res.status(200).send(`Sejs bem-vindo! ${JSON.stringify(usuarioMensagens)}`)
+});
+
+
+
+//-------------------------- ATUALIZAR MENSAGEM -----------------------
+
+app.put('/mensagem/:id', (req, res) => {
+    const mensagemId = req.body.id;
+    const { titulo, descricao } = req.body
+
+    const mensagemIndex = mensagens.findIndex(mensagem => mensagem.id === mensagemId);
+
+    if(mensagemIndex === -1) {
+        return res.status(400).send('Por favor, informe um ID válido da mensagem')
+    }
+
+    mensagens[mensagemIndex].titulo = titulo;
+    mensagens[mensagemIndex].descricao = descricao;
+
+    res.status(200).send(`Mensagem atualizada com sucesso! ${JSON.stringify(mensagens[mensagemIndex])}`);
+})
+
+//------------------------- DELETAR MENSAGEM ---------------------------
+
+app.delete('/mensagem/:id', (req, res) => {
+    const { id } = req.params
+
+    const index = mensagens.findIndex(mensagem => mensagem.id === id);
+
+    if (index === -1) {
+        return res.status(400).send('Mensagem não encontrada, verifique o ID')
+    }
+
+    mensagens.splice(index, 1)
+    res.status(200).send(JSON.stringify({ Mensagem: "deletada com sucesso"}))
+
+})
 
 app.listen(3333, () => console.log("Servidor rodando na porta 3333"))
