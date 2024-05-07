@@ -14,58 +14,71 @@ app.get('/', (req, res) => {
     res.status(200).send('Bem vindo à aplicação.')
 });
 
-//------------------------PESSOA USUÁRIA----------------------------
+//------------------------REGISTRO----------------------------
 
-const usuarios = [];
-const mensagens = [];
-const mensagem = [];
+let usuarios = [];
+let mensagens = [];
+let proximoRegistro = 1
+
 
 app.post('/registro', async (req, res) => {
-        const { nome, email, password } = req.body;
+    const { nome, email, password } = req.body;
 
-        if(!nome || !email || !password) {
-            return res.status(400).send('Por favor, preencha todos os campos')
-        }
+    if (!nome || !email || !password) {
+        return res.status(400).send('Por favor, preencha todos os campos');
+    }
 
-         // Verificando se o e-mail já está em uso
-        const existirUsuario = usuarios.find(usuario => usuario.email === email);
-        if (existirUsuario) {
+    // Verificando se o e-mail já está em uso
+    const existirUsuario = usuarios.find(usuario => usuario.email === email);
+    if (existirUsuario) {
         return res.status(400).send('Este e-mail já está em uso.');
+    }
+
+
+    // Hash da senha
+    bcrypt.hash(password, 10, (err, senhaCriptografada) => {
+        if (err) {
+            return res.status(500).send('Erro ao criar usuário');
         }
 
-        // Gerando um ID único para o novo usuário (ultilizando um UUID)
-        const { v4: uuidv4 } = req('uuid');
-        
-        const id = uuidv4();
-
-        bcrypt.hash(senha, 10, (err, senhaCriptografada) => {
-            if (err) {
-                return res.status(500).send('Erro ao criar usuário')
-            }
-        })
-    
         // Registrando novo usuário
-        const novoUsuario = { email, senha: senhaCriptografada };
+        const novoUsuario = {
+            id: proximoRegistro,
+            nome: nome,
+            email: email,
+            password: senhaCriptografada
+        };
         usuarios.push(novoUsuario);
-        return res.status(201).send(`Seja bem vindo ${nome}! usuário registrado com sucesso.`);
+
+        res.status(201).send(`Seja bem vindo ${nome}! Usuário registrado com sucesso.`);
     });
+});
 
 //------------------LOGIN----------------------------------
 
-app.post('/login', (req, res) => {
-    const { email, password } = req.body
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
 
-    if(!email || !password) {
-        return res.status(400).send('Insira um e-mail e uma senha válidos')
-    }
-    const usuario = usuarios.find(usuario => usuario.email === email && usuario.password === password);
+    const usuario = usuarios.find(usuario => usuario.email === email);
 
     if (!usuario) {
-        return res.status(401).send('E-mail ou senha incorretos');
+        return res.status(400).send('Insira um e-mail e uma senha válidos');
     }
 
-    return res.status(200).send('Login bem-sucedido');
+    // Verifica a senha
+    try {
+        const senhaCorreta = await bcrypt.compare(password, usuario.password);
+
+        if (senhaCorreta) {
+            return res.status(200).send('Login bem-sucedido');
+        } else {
+            return res.status(400).send('Insira um e-mail e uma senha válidos');
+        }
+    } catch (error) {
+        return res.status(500).send('Erro ao fazer login');
+    }
 });
+
 
 //-----------------------CRIAR RECADOS-------------------------
 
@@ -112,7 +125,7 @@ app.get('/mensagem/:email', (req,res) => {
 //-------------------------- ATUALIZAR MENSAGEM -----------------------
 
 app.put('/mensagem/:id', (req, res) => {
-    const mensagemId = req.body.id;
+    const mensagemId = req.params.id;
     const { titulo, descricao } = req.body
 
     const mensagemIndex = mensagens.findIndex(mensagem => mensagem.id === mensagemId);
