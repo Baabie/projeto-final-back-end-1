@@ -1,8 +1,8 @@
 # Projeto final back-end1 do curso Growdev starter fullstack
 
-## Descrição
+ Descrição :
 
--Projeto de API, com criação de conta, login e CRUD de recados.
+- Projeto de API, com criação de conta, login e CRUD de recados.
 
 - Linguagens usadas
 
