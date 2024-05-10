@@ -125,7 +125,7 @@ app.get('/mensagem/:email', (req,res) => {
 
     const usuarioMensagens = mensagens.filter(mensagem => mensagem.idUsuario == usuario.id)
 
-    res.status(200).send(`Sejs bem-vindo! ${JSON.stringify(usuarioMensagens)}`)
+    res.status(200).send(`Seja bem-vindo! ${JSON.stringify(usuarioMensagens)}`)
 });
 
 
