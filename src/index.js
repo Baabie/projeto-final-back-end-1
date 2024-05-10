@@ -19,11 +19,12 @@ app.get('/', (req, res) => {
 let usuarios = [];
 let mensagens = [];
 let proximoRegistro = 1
+let proximoId = 1
 
 
 app.post('/registro', async (req, res) => {
     const { nome, email, password } = req.body;
-
+// fazer essa merda de iD
     if (!nome || !email || !password) {
         return res.status(400).send('Por favor, preencha todos os campos');
     }
@@ -79,43 +80,50 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
-//-----------------------CRIAR RECADOS-------------------------
+//-----------------------CRIAR MENSAGENS-------------------------
 
 app.post('/mensagens', async (req, res) => {
     const { idUsuario, mensagem } = req.body;
 
-    const usuario = usuarios.find(usuario => usuario.id === idUsuario);
+
+    const usuario = usuarios.find(usuario => usuario.id === parseInt(idUsuario));
     if (!usuario) {
         return res.status(404).send('Usuário não encontrado');
     }
 
-    const novaMensagem = { idUsuario, mensagem };
-    mensagens.push(novaMensagem)
+    const novaMensagem = { 
+        id: proximoId,
+        idUsuario: idUsuario,
+        mensagem: mensagem
+    };
+    mensagens.push(novaMensagem);
 
     res.status(201).send('Recado criado com sucesso')
 });
 
-app.get('/mensagem/:idUsuario', async (req, res) => {
-    const { idUsuario } = req.params;
+app.get('/mensagens/:idUsuario', async (req, res) => {
+    const idUsuario = Number(req.params);
 
-    const mensagensUsuario = mensagens.filter((mensagem) => mensagem.idUsuario === idUsuario);
+    // Filtra as mensagens pelo id do usuário
+    const mensagensUsuario = mensagens.filter(mensagem => mensagem.idUsuario === idUsuario);
 
-    return res.status(200).send(mensagensUsuario);
+    return res.status(200).json(mensagensUsuario);
 });
+
 
 
 //-------------------------- LER MENSAGENS --------------------------
 
 app.get('/mensagem/:email', (req,res) => {
-    const emailUsuario = req.params.email;
+    const emailUsuario  = req.params.email;
 
     const usuario = usuarios.find(usuario => usuario.email === emailUsuario);
+
     if(!usuario) {
         return res.status(404).send('Email não encontradono sistema')
     }
 
-    const usuarioMensagens = mensagens.filter(mensagem => mensagem.idUsuario === usuario.id)
+    const usuarioMensagens = mensagens.filter(mensagem => mensagem.idUsuario == usuario.id)
 
     res.status(200).send(`Sejs bem-vindo! ${JSON.stringify(usuarioMensagens)}`)
 });
@@ -125,35 +133,37 @@ app.get('/mensagem/:email', (req,res) => {
 //-------------------------- ATUALIZAR MENSAGEM -----------------------
 
 app.put('/mensagem/:id', (req, res) => {
-    const mensagemId = req.params.id;
-    const { titulo, descricao } = req.body
+    const id = Number(req.params.id);
+    const { titulo, descricao } = req.body;
 
-    const mensagemIndex = mensagens.findIndex(mensagem => mensagem.id === mensagemId);
-
-    if(mensagemIndex === -1) {
-        return res.status(400).send('Por favor, informe um ID válido da mensagem')
+    // Verifica se o id fornecido é um número válido
+    if (isNaN(id) || id < 0 || id >= mensagens.length) {
+        return res.status(400).send('Por favor, informe um ID válido da mensagem');
     }
 
-    mensagens[mensagemIndex].titulo = titulo;
-    mensagens[mensagemIndex].descricao = descricao;
+    // Atualiza os dados da mensagem com base no id
+    mensagens[id].titulo = titulo;
+    mensagens[id].descricao = descricao;
 
-    res.status(200).send(`Mensagem atualizada com sucesso! ${JSON.stringify(mensagens[mensagemIndex])}`);
-})
+    res.status(200).send(`Mensagem atualizada com sucesso! ${JSON.stringify(mensagens[id])}`);
+});
+
+
 
 //------------------------- DELETAR MENSAGEM ---------------------------
 
 app.delete('/mensagem/:id', (req, res) => {
-    const { id } = req.params
+    const id = Number(req.params.id);
 
     const index = mensagens.findIndex(mensagem => mensagem.id === id);
 
     if (index === -1) {
-        return res.status(400).send('Mensagem não encontrada, verifique o ID')
+        return res.status(400).send('Mensagem não encontrada, verifique o ID');
     }
 
-    mensagens.splice(index, 1)
-    res.status(200).send(JSON.stringify({ Mensagem: "deletada com sucesso"}))
+    mensagens.splice(index, 1);
+    res.status(200).send(JSON.stringify({ mensagem: "Mensagem deletada com sucesso" }));
+});
 
-})
 
 app.listen(3333, () => console.log("Servidor rodando na porta 3333"))
